@@ -4,11 +4,21 @@ import SwiftUI
 
 struct SlotEditor: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var loc: Localizer
     let slot: Slot
 
-    private enum Kind: String, CaseIterable, Identifiable {
-        case none = "Nenhuma", keys = "Teclas", media = "Multimídia", mouse = "Mouse"
-        var id: String { rawValue }
+    private enum Kind: CaseIterable, Identifiable {
+        case none, keys, media, mouse
+        var id: Self { self }
+    }
+
+    private func title(_ kind: Kind) -> String {
+        switch kind {
+        case .none: return loc.s.kindNone
+        case .keys: return loc.s.kindKeys
+        case .media: return loc.s.kindMedia
+        case .mouse: return loc.s.kindMouse
+        }
     }
 
     private var action: KeyAction { model.action(for: slot) }
@@ -34,26 +44,26 @@ struct SlotEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(slot.displayName).font(.title3.bold())
-                Text("Camada \(model.layer + 1)").font(.caption).foregroundStyle(.secondary)
+                Text(loc.s.slotName(slot)).font(.title3.bold())
+                Text(loc.s.layer(model.layer + 1)).font(.caption).foregroundStyle(.secondary)
             }
-            Picker("Ação", selection: kind) {
-                ForEach(Kind.allCases) { Text($0.rawValue).tag($0) }
+            Picker(loc.s.action, selection: kind) {
+                ForEach(Kind.allCases) { Text(title($0)).tag($0) }
             }
             .pickerStyle(.segmented)
 
             switch action {
             case .none:
-                Text("Esta entrada não envia nada.").foregroundStyle(.secondary)
+                Text(loc.s.noAction).foregroundStyle(.secondary)
                 Spacer()
             case .keys(let chords):
                 KeysEditor(chords: chords) { model.setAction(.keys($0), for: slot) }
             case .media(let current):
-                OptionGrid(items: MediaKey.allCases, selected: current, title: \.displayName) {
+                OptionGrid(items: MediaKey.allCases, selected: current, title: loc.s.mediaName) {
                     model.setAction(.media($0), for: slot)
                 }
             case .mouse(let current):
-                OptionGrid(items: MouseAction.allCases, selected: current, title: \.displayName) {
+                OptionGrid(items: MouseAction.allCases, selected: current, title: loc.s.mouseName) {
                     model.setAction(.mouse($0), for: slot)
                 }
             }
@@ -67,7 +77,7 @@ struct SlotEditor: View {
 private struct OptionGrid<Item: Hashable>: View {
     let items: [Item]
     let selected: Item
-    let title: KeyPath<Item, String>
+    let title: (Item) -> String
     let pick: (Item) -> Void
 
     var body: some View {
@@ -77,7 +87,7 @@ private struct OptionGrid<Item: Hashable>: View {
                     Button {
                         pick(item)
                     } label: {
-                        Text(item[keyPath: title])
+                        Text(title(item))
                             .frame(maxWidth: .infinity, minHeight: 30)
                             .padding(.horizontal, 6)
                             .background(RoundedRectangle(cornerRadius: 7)
@@ -94,13 +104,14 @@ private struct OptionGrid<Item: Hashable>: View {
 // MARK: Keyboard macro editor
 
 private struct KeysEditor: View {
+    @EnvironmentObject private var loc: Localizer
     let chords: [KeyChord]
     let update: ([KeyChord]) -> Void
 
     @State private var recording = false
     @State private var monitor: Any?
     @State private var text = ""
-    @State private var textError: String?
+    @State private var textError = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -108,14 +119,14 @@ private struct KeysEditor: View {
                 Button {
                     recording ? stopRecording() : startRecording()
                 } label: {
-                    Label(recording ? "Pressione o atalho… (Esc cancela)" : "Gravar atalho",
+                    Label(recording ? loc.s.recordingPrompt : loc.s.recordShortcut,
                           systemImage: recording ? "record.circle.fill" : "record.circle")
                 }
                 .tint(recording ? .red : nil)
                 Button {
                     update(chords + [KeyChord(keyCode: HIDKeys.a)])
                 } label: {
-                    Label("Adicionar tecla", systemImage: "plus")
+                    Label(loc.s.addKey, systemImage: "plus")
                 }
                 .disabled(chords.count >= MacropedProtocol.maxChords)
                 Spacer()
@@ -123,9 +134,7 @@ private struct KeysEditor: View {
             }
 
             if chords.isEmpty {
-                Text("Nenhuma tecla. Use “Gravar atalho” (ex.: ⌘⇧4) ou adicione teclas manualmente. "
-                     + "Várias teclas formam uma macro executada em sequência.")
-                    .font(.callout).foregroundStyle(.secondary)
+                Text(loc.s.emptyKeysHint).font(.callout).foregroundStyle(.secondary)
             }
 
             ScrollView {
@@ -140,16 +149,16 @@ private struct KeysEditor: View {
                 }
             }
 
-            GroupBox("Digitar texto (layout US)") {
+            GroupBox(loc.s.typeTextTitle) {
                 HStack {
-                    TextField("ex.: git status", text: $text)
+                    TextField(loc.s.typeTextPlaceholder, text: $text)
                         .textFieldStyle(.roundedBorder)
                         .onSubmit(convertText)
-                    Button("Converter em macro", action: convertText).disabled(text.isEmpty)
+                    Button(loc.s.convertToMacro, action: convertText).disabled(text.isEmpty)
                 }
                 .padding(4)
-                if let textError {
-                    Text(textError).font(.caption).foregroundStyle(.red)
+                if textError {
+                    Text(loc.s.asciiOnly).font(.caption).foregroundStyle(.red)
                 }
             }
         }
@@ -158,10 +167,10 @@ private struct KeysEditor: View {
 
     private func convertText() {
         guard let converted = HIDKeys.chords(forText: text) else {
-            textError = "Somente caracteres ASCII são suportados (sem acentos)."
+            textError = true
             return
         }
-        textError = nil
+        textError = false
         update(Array((chords + converted).prefix(MacropedProtocol.maxChords)))
         text = ""
     }
@@ -188,6 +197,7 @@ private struct KeysEditor: View {
 }
 
 private struct ChordRow: View {
+    @EnvironmentObject private var loc: Localizer
     let index: Int
     let chord: KeyChord
     let change: (KeyChord?) -> Void
@@ -202,10 +212,10 @@ private struct ChordRow: View {
             Picker("", selection: Binding(get: { chord.keyCode }, set: {
                 change(KeyChord(modifiers: chord.modifiers, keyCode: $0))
             })) {
-                Text("(somente modificadores)").tag(UInt8(0))
+                Text(loc.s.modifiersOnly).tag(UInt8(0))
                 ForEach(HIDKeys.groups, id: \.self) { group in
-                    Section(group) {
-                        ForEach(HIDKeys.all.filter { $0.group == group }) { Text($0.name).tag($0.code) }
+                    Section(loc.s.keyGroup(group)) {
+                        ForEach(HIDKeys.all.filter { $0.group == group }) { Text(loc.s.keyName($0.code)).tag($0.code) }
                     }
                 }
             }
@@ -217,7 +227,7 @@ private struct ChordRow: View {
                 Image(systemName: "trash")
             }
             .buttonStyle(.borderless)
-            .help("Remover")
+            .help(loc.s.remove)
         }
         .padding(6)
         .background(RoundedRectangle(cornerRadius: 8).fill(Color.secondary.opacity(0.08)))

@@ -16,8 +16,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var connection: Connection = .disconnected
     @Published private(set) var busy = false
     @Published private(set) var progress: Double = 0
-    @Published var status = "Procurando o mini teclado…"
-    @Published var alert: String?
+    @Published var status: StatusMessage = .searching
+    @Published var alert: StatusMessage?
     @Published var hasUnsavedChanges = false
 
     private var timer: Timer?
@@ -71,7 +71,7 @@ final class AppModel: ObservableObject {
     func copyLayer(to target: Int) {
         profile.layers[target] = profile.layers[layer]
         hasUnsavedChanges = true
-        status = "Camada \(layer + 1) copiada para a camada \(target + 1)."
+        status = .layerCopied(layer + 1, target + 1)
     }
 
     func resetToDefault() {
@@ -99,51 +99,50 @@ final class AppModel: ObservableObject {
         guard !busy else { return }
         let list = MacropedDevice.list()
         guard let info = list.first else {
-            if isConnected || status.hasPrefix("Procurando") {
+            if isConnected || status == .searching {
                 connection = .disconnected
-                status = "Mini teclado desconectado. Conecte-o com um cabo USB de dados."
+                status = .disconnectedHint
             }
             return
         }
         if case .connected(let current, _) = connection, current.registryID == info.registryID { return }
         connection = .connected(info, nil)
-        status = "Conectado: \(info.product)"
+        status = .connected(info.product)
         identify()
     }
 
     private func identify() {
-        run("Identificando…") { dev in
+        run(.identifying) { dev in
             dev.identify()
         } done: { [weak self] layout in
             guard let self, case .connected(let info, _) = self.connection else { return }
             self.connection = .connected(info, layout)
             if let layout, layout != self.profile.layout { self.setLayout(layout) }
-            self.status = layout.map { "Conectado: \(info.product) — \($0.keys) teclas, \($0.knobs) knob(s)" }
-                ?? "Conectado: \(info.product)"
+            self.status = layout.map { .connectedLayout(info.product, $0.keys, $0.knobs) } ?? .connected(info.product)
         }
     }
 
     func writeToDevice() {
         let profile = self.profile
-        run("Gravando no teclado…") { [weak self] dev in
+        run(.writing) { [weak self] dev in
             try dev.write(profile) { p in
                 Task { @MainActor in self?.progress = p }
             }
         } done: { [weak self] _ in
             self?.hasUnsavedChanges = false
-            self?.status = "Configuração gravada com sucesso ✓"
+            self?.status = .writeSuccess
         }
     }
 
     func readFromDevice() {
         let layout = self.layout
-        run("Lendo configuração do teclado…") { dev in
+        run(.reading) { dev in
             try dev.readProfile(layout: layout)
         } done: { [weak self] result in
             guard let self else { return }
             let (read, count) = result
             if count == 0 {
-                self.status = "O firmware não devolveu a configuração (nem todos os modelos suportam leitura)."
+                self.status = .readUnsupported
                 return
             }
             var merged = read
@@ -154,11 +153,11 @@ final class AppModel: ObservableObject {
             }
             self.profile = merged
             self.hasUnsavedChanges = false
-            self.status = "Configuração lida do teclado (\(count) registros)."
+            self.status = .readDone(count)
         }
     }
 
-    private func run<T>(_ message: String, _ work: @escaping @Sendable (MacropedDevice) throws -> T,
+    private func run<T>(_ message: StatusMessage, _ work: @escaping @Sendable (MacropedDevice) throws -> T,
                         done: @escaping @MainActor (T) -> Void) {
         guard !busy else { return }
         busy = true
@@ -178,8 +177,8 @@ final class AppModel: ObservableObject {
                 case .success(let value):
                     done(value)
                 case .failure(let error):
-                    self.status = error.localizedDescription
-                    self.alert = error.localizedDescription
+                    self.status = StatusMessage(error)
+                    self.alert = StatusMessage(error)
                     if (error as? MacropedError) == .notFound { self.connection = .disconnected }
                 }
             }
@@ -197,9 +196,9 @@ final class AppModel: ObservableObject {
             let enc = JSONEncoder()
             enc.outputFormatting = [.prettyPrinted, .sortedKeys]
             try enc.encode(profile).write(to: url)
-            status = "Perfil salvo em \(url.lastPathComponent)."
+            status = .profileSaved(url.lastPathComponent)
         } catch {
-            alert = "Não foi possível salvar: \(error.localizedDescription)"
+            alert = .saveFailed(error.localizedDescription)
         }
     }
 
@@ -212,9 +211,9 @@ final class AppModel: ObservableObject {
             if case .connected(_, let layout?) = connection { p.layout = layout }
             profile = p
             hasUnsavedChanges = true
-            status = "Perfil “\(p.name)” carregado. Clique em Gravar no teclado para aplicar."
+            status = .profileLoaded(p.name)
         } catch {
-            alert = "Perfil inválido: \(error.localizedDescription)"
+            alert = .invalidProfile(error.localizedDescription)
         }
     }
 }

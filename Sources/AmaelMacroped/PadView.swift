@@ -38,6 +38,7 @@ struct PadView: View {
 
 private struct KeyCap: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var loc: Localizer
     let slot: Slot
     let title: String
 
@@ -48,7 +49,7 @@ private struct KeyCap: View {
         } label: {
             VStack(spacing: 6) {
                 Text(title).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                Text(model.action(for: slot).summary)
+                Text(loc.s.summary(model.action(for: slot)))
                     .font(.system(size: 12, weight: .medium))
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
@@ -64,12 +65,13 @@ private struct KeyCap: View {
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? Color.accentOrange : .clear, lineWidth: 2.5))
         }
         .buttonStyle(.plain)
-        .help(slot.displayName)
+        .help(loc.s.slotName(slot))
     }
 }
 
 private struct KnobView: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var loc: Localizer
     let index: Int
 
     var body: some View {
@@ -88,10 +90,10 @@ private struct KnobView: View {
                     .overlay(Circle().stroke(model.selectedSlot == .knobPress(index) ? Color.accentOrange : .clear, lineWidth: 2.5).padding(-3))
                 }
                 .buttonStyle(.plain)
-                .help(Slot.knobPress(index).displayName)
+                .help(loc.s.slotName(.knobPress(index)) + " — " + loc.s.summary(model.action(for: .knobPress(index))))
                 part(.knobRight(index), icon: "arrow.clockwise")
             }
-            Text("Knob \(index + 1)").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+            Text(loc.s.knob(index + 1)).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
         }
     }
 
@@ -107,6 +109,6 @@ private struct KnobView: View {
                                          lineWidth: model.selectedSlot == slot ? 2.5 : 1))
         }
         .buttonStyle(.plain)
-        .help(slot.displayName + " — " + model.action(for: slot).summary)
+        .help(loc.s.slotName(slot) + " — " + loc.s.summary(model.action(for: slot)))
     }
 }

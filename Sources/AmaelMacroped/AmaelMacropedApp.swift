@@ -6,29 +6,38 @@ import SwiftUI
 struct AmaelMacropedApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = AppModel()
+    @StateObject private var loc = Localizer()
 
     var body: some Scene {
         WindowGroup("Amael Macroped") {
             ContentView()
                 .environmentObject(model)
+                .environmentObject(loc)
+                .environment(\.locale, loc.language.locale)
                 .frame(minWidth: 860, minHeight: 560)
         }
         .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("Abrir perfil…") { model.openProfile() }.keyboardShortcut("o")
-                Button("Salvar perfil como…") { model.saveProfileAs() }.keyboardShortcut("s")
+                Button(loc.s.openProfile) { model.openProfile() }.keyboardShortcut("o")
+                Button(loc.s.saveProfileAs) { model.saveProfileAs() }.keyboardShortcut("s")
             }
-            CommandMenu("Teclado") {
-                Button("Gravar no teclado") { model.writeToDevice() }
+            CommandMenu(loc.s.keyboardMenu) {
+                Button(loc.s.writeToDevice) { model.writeToDevice() }
                     .keyboardShortcut(.return, modifiers: .command)
                     .disabled(!model.isConnected || model.busy)
-                Button("Ler do teclado") { model.readFromDevice() }
+                Button(loc.s.readFromDevice) { model.readFromDevice() }
                     .keyboardShortcut("r")
                     .disabled(!model.isConnected || model.busy)
                 Divider()
-                Button("Restaurar perfil padrão") { model.resetToDefault() }
+                Button(loc.s.restoreDefault) { model.resetToDefault() }
             }
+        }
+
+        Settings {
+            SettingsView()
+                .environmentObject(loc)
+                .environment(\.locale, loc.language.locale)
         }
     }
 }
@@ -43,6 +52,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+
     /// Debug aid: renders the main window to a PNG without needing screen-recording permission.
     private static func snapshot(to path: String) {
         guard let view = NSApp.windows.first(where: \.isVisible)?.contentView,
@@ -50,6 +61,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         view.cacheDisplay(in: view.bounds, to: rep)
         try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
     }
-
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }

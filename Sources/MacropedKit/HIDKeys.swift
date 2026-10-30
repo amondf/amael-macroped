@@ -19,21 +19,21 @@ public enum HIDKeys {
         func add(_ group: String, _ items: [(UInt8, String)]) {
             e += items.map { Entry(code: $0.0, name: $0.1, group: group) }
         }
-        add("Letras", (0..<26).map { (UInt8(0x04 + $0), String(UnicodeScalar(UInt8(65 + $0)))) })
-        add("Números", [(0x1E, "1"), (0x1F, "2"), (0x20, "3"), (0x21, "4"), (0x22, "5"),
+        add("letters", (0..<26).map { (UInt8(0x04 + $0), String(UnicodeScalar(UInt8(65 + $0)))) })
+        add("digits", [(0x1E, "1"), (0x1F, "2"), (0x20, "3"), (0x21, "4"), (0x22, "5"),
                         (0x23, "6"), (0x24, "7"), (0x25, "8"), (0x26, "9"), (0x27, "0")])
-        add("Especiais", [(0x28, "Return ↩"), (0x29, "Esc"), (0x2A, "Backspace ⌫"), (0x2B, "Tab ⇥"),
-                          (0x2C, "Espaço"), (0x39, "Caps Lock"), (0x65, "Menu")])
-        add("Símbolos", [(0x2D, "- _"), (0x2E, "= +"), (0x2F, "[ {"), (0x30, "] }"), (0x31, "\\ |"),
+        add("special", [(0x28, "Return ↩"), (0x29, "Esc"), (0x2A, "Backspace ⌫"), (0x2B, "Tab ⇥"),
+                          (0x2C, "Space"), (0x39, "Caps Lock"), (0x65, "Menu")])
+        add("symbols", [(0x2D, "- _"), (0x2E, "= +"), (0x2F, "[ {"), (0x30, "] }"), (0x31, "\\ |"),
                          (0x32, "# ~ (ISO)"), (0x33, "; :"), (0x34, "' \""), (0x35, "` ~"),
                          (0x36, ", <"), (0x37, ". >"), (0x38, "/ ?"), (0x64, "\\ | (ISO)")])
-        add("Navegação", [(0x4F, "→"), (0x50, "←"), (0x51, "↓"), (0x52, "↑"),
+        add("navigation", [(0x4F, "→"), (0x50, "←"), (0x51, "↓"), (0x52, "↑"),
                           (0x4A, "Home"), (0x4D, "End"), (0x4B, "Page Up"), (0x4E, "Page Down"),
                           (0x49, "Insert"), (0x4C, "Delete ⌦"), (0x46, "Print Screen"),
                           (0x47, "Scroll Lock"), (0x48, "Pause")])
-        add("Função", (0..<12).map { (UInt8(0x3A + $0), "F\($0 + 1)") }
+        add("function", (0..<12).map { (UInt8(0x3A + $0), "F\($0 + 1)") }
             + (0..<12).map { (UInt8(0x68 + $0), "F\($0 + 13)") })
-        add("Teclado numérico", [(0x53, "Num Lock"), (0x54, "Num /"), (0x55, "Num *"), (0x56, "Num -"),
+        add("keypad", [(0x53, "Num Lock"), (0x54, "Num /"), (0x55, "Num *"), (0x56, "Num -"),
                                  (0x57, "Num +"), (0x58, "Num Enter"), (0x59, "Num 1"), (0x5A, "Num 2"),
                                  (0x5B, "Num 3"), (0x5C, "Num 4"), (0x5D, "Num 5"), (0x5E, "Num 6"),
                                  (0x5F, "Num 7"), (0x60, "Num 8"), (0x61, "Num 9"), (0x62, "Num 0"),

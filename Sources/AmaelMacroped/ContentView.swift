@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var loc: Localizer
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,7 +24,7 @@ struct ContentView: View {
                     if let slot = model.selectedSlot {
                         SlotEditor(slot: slot)
                     } else {
-                        Text("Selecione uma tecla ou direção do knob").foregroundStyle(.secondary)
+                        Text(loc.s.selectSlotHint).foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
@@ -35,7 +36,7 @@ struct ContentView: View {
         .alert("Amael Macroped", isPresented: Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(model.alert ?? "")
+            Text(model.alert.map(loc.s.status) ?? "")
         }
     }
 }
@@ -43,7 +44,7 @@ struct ContentView: View {
 // MARK: Header / footer
 
 private struct HeaderView: View {
-    @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var loc: Localizer
 
     var body: some View {
         HStack(spacing: 12) {
@@ -52,31 +53,65 @@ private struct HeaderView: View {
                 .foregroundStyle(Color.accentOrange)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Amael Macroped").font(.title2.bold())
-                Text("Configurador nativo Apple Silicon para mini teclados CH57x")
-                    .font(.caption).foregroundStyle(.secondary)
+                Text(loc.s.appSubtitle).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
+            if let url = Support.donationURL {
+                Link(destination: url) {
+                    Label("Buy me a coffee", systemImage: "cup.and.saucer.fill")
+                        .font(.callout.weight(.medium))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.yellow.opacity(0.85), in: Capsule())
+                        .foregroundStyle(.black)
+                }
+                .buttonStyle(.plain)
+                .help(loc.s.donateHelp)
+            }
             ConnectionBadge()
+            SettingsButton()
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
     }
 }
 
+private struct SettingsButton: View {
+    @EnvironmentObject private var loc: Localizer
+
+    var body: some View {
+        Group {
+            if #available(macOS 14, *) {
+                SettingsLink { Image(systemName: "gearshape") }
+            } else {
+                Button {
+                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+            }
+        }
+        .buttonStyle(.borderless)
+        .font(.system(size: 16))
+        .help(loc.s.settings)
+    }
+}
+
 private struct ConnectionBadge: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var loc: Localizer
 
     var body: some View {
         HStack(spacing: 8) {
             Circle().fill(model.isConnected ? Color.green : Color.red).frame(width: 9, height: 9)
             switch model.connection {
             case .disconnected:
-                Text("Desconectado").font(.callout)
+                Text(loc.s.disconnected).font(.callout)
             case .connected(let info, let layout):
                 VStack(alignment: .trailing, spacing: 0) {
                     Text(info.product).font(.callout.weight(.medium))
                     Text(String(format: "%04X:%04X", info.vendorID, info.productID)
-                         + (layout.map { " · \($0.keys) teclas · \($0.knobs) knob" } ?? ""))
+                         + (layout.map { loc.s.keysKnobs($0.keys, $0.knobs) } ?? ""))
                         .font(.caption2.monospaced()).foregroundStyle(.secondary)
                 }
             }
@@ -89,20 +124,21 @@ private struct ConnectionBadge: View {
 
 private struct FooterView: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var loc: Localizer
 
     var body: some View {
         HStack(spacing: 12) {
             if model.busy {
                 ProgressView(value: model.progress).frame(width: 120)
             }
-            Text(model.status).font(.callout).foregroundStyle(.secondary).lineLimit(2)
+            Text(loc.s.status(model.status)).font(.callout).foregroundStyle(.secondary).lineLimit(2)
             Spacer()
-            Button("Ler do teclado") { model.readFromDevice() }
+            Button(loc.s.readFromDevice) { model.readFromDevice() }
                 .disabled(!model.isConnected || model.busy)
             Button {
                 model.writeToDevice()
             } label: {
-                Label(model.hasUnsavedChanges ? "Gravar no teclado •" : "Gravar no teclado", systemImage: "square.and.arrow.down")
+                Label(loc.s.writeToDevice + (model.hasUnsavedChanges ? " •" : ""), systemImage: "square.and.arrow.down")
             }
             .buttonStyle(.borderedProminent)
             .tint(.accentOrange)
@@ -117,22 +153,23 @@ private struct FooterView: View {
 
 private struct LayerBar: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var loc: Localizer
 
     var body: some View {
         HStack {
-            Picker("Camada", selection: $model.layer) {
-                ForEach(0..<DeviceProfile.layerCount, id: \.self) { Text("Camada \($0 + 1)").tag($0) }
+            Picker(loc.s.layer(model.layer + 1), selection: $model.layer) {
+                ForEach(0..<DeviceProfile.layerCount, id: \.self) { Text(loc.s.layer($0 + 1)).tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
             Menu {
                 ForEach(0..<DeviceProfile.layerCount, id: \.self) { target in
                     if target != model.layer {
-                        Button("Copiar para camada \(target + 1)") { model.copyLayer(to: target) }
+                        Button(loc.s.copyToLayer(target + 1)) { model.copyLayer(to: target) }
                     }
                 }
                 Divider()
-                Button("Limpar esta camada", role: .destructive) { model.clearLayer() }
+                Button(loc.s.clearLayer, role: .destructive) { model.clearLayer() }
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
@@ -146,25 +183,26 @@ private struct LayerBar: View {
 
 private struct LEDSection: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var loc: Localizer
 
     var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
-                Toggle("Configurar iluminação nesta camada", isOn: Binding(
+                Toggle(loc.s.configureLighting, isOn: Binding(
                     get: { model.led != nil },
                     set: { model.led = $0 ? LEDConfig(mode: 1, color: .orange) : nil }
                 ))
                 if let led = model.led {
-                    Picker("Efeito", selection: Binding(
+                    Picker(loc.s.effect, selection: Binding(
                         get: { led.mode },
                         set: { model.led = LEDConfig(mode: $0, color: led.color) }
                     )) {
-                        Text("Desligado").tag(UInt8(0))
-                        ForEach(1...5, id: \.self) { Text("Efeito \($0)").tag(UInt8($0)) }
+                        Text(loc.s.effectOff).tag(UInt8(0))
+                        ForEach(1...5, id: \.self) { Text(loc.s.effectN($0)).tag(UInt8($0)) }
                     }
                     .frame(maxWidth: 260)
                     HStack(spacing: 8) {
-                        Text("Cor")
+                        Text(loc.s.color)
                         ForEach(LEDColor.allCases, id: \.self) { color in
                             Button {
                                 model.led = LEDConfig(mode: led.mode, color: color)
@@ -173,17 +211,16 @@ private struct LEDSection: View {
                                     .overlay(Circle().stroke(Color.primary, lineWidth: led.color == color ? 2 : 0).padding(-3))
                             }
                             .buttonStyle(.plain)
-                            .help(color.displayName)
+                            .help(loc.s.colorName(color))
                         }
                     }
-                    Text("Os efeitos são definidos pelo firmware; alguns modelos ignoram a cor em certos efeitos.")
-                        .font(.caption).foregroundStyle(.secondary)
+                    Text(loc.s.lightingNote).font(.caption).foregroundStyle(.secondary)
                 }
             }
             .padding(6)
             .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
-            Label("Iluminação", systemImage: "lightbulb")
+            Label(loc.s.lighting, systemImage: "lightbulb")
         }
     }
 }

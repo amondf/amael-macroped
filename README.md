@@ -23,6 +23,7 @@ original por um app 100% nativo, sem dependências externas (SwiftUI + IOKit HID
 - 🎛️ **Knob**: girar à esquerda, pressionar e girar à direita — cada um com sua ação
 - 🗂️ **3 camadas** independentes, cada uma com seu efeito/cor de **LED**
 - 💾 Perfis em JSON (abrir/salvar) e restauração do último perfil automaticamente
+- 🌐 Interface em **Português (Brasil), English, Русский e 简体中文** — troca instantânea em *Ajustes* (⌘,)
 - 🧰 **CLI** `macroped` para automação e diagnóstico
 - 🔌 Detecção automática do layout (nº de teclas/knobs) informado pelo firmware
 
@@ -136,10 +137,13 @@ Estrutura do código:
 
 ```
 Sources/MacropedKit/    protocolo, modelo de perfil, tabela de teclas e acesso HID (IOKit)
-Sources/AmaelMacroped/  app SwiftUI
+Sources/AmaelMacroped/  app SwiftUI (traduções em Localization/Strings+<Idioma>.swift)
 Sources/MacropedCLI/    CLI "macroped"
 Tests/MacropedKitTests/ testes do codificador/decodificador
 ```
+
+**Novo idioma?** Copie `Sources/AmaelMacroped/Localization/Strings+English.swift`, traduza e adicione o caso em
+`AppLanguage` — se faltar algum texto, o compilador avisa.
 
 Agradecimentos ao projeto [ch57x-keyboard-tool](https://github.com/kriomant/ch57x-keyboard-tool), que também
 documentou esta família de dispositivos.
