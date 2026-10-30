@@ -73,6 +73,7 @@ enum StatusMessage: Equatable {
     case readUnsupported
     case readDone(Int)
     case layerCopied(Int, Int)
+    case clearedAll
     case profileSaved(String)
     case profileLoaded(String)
     case saveFailed(String)
@@ -108,6 +109,10 @@ struct Strings {
     let layer: (Int) -> String
     let copyToLayer: (Int) -> String
     let clearLayer: String
+    let clearAll: String
+    let clearAllTitle: String
+    let clearAllMessage: String
+    let cancel: String
 
     // Lighting
     let lighting: String
@@ -167,6 +172,7 @@ struct Strings {
     let readUnsupported: String
     let readDone: (Int) -> String
     let layerCopied: (Int, Int) -> String
+    let clearedAll: String
     let profileSaved: (String) -> String
     let profileLoaded: (String) -> String
     let saveFailed: (String) -> String
@@ -237,6 +243,7 @@ extension Strings {
         case .readUnsupported: return readUnsupported
         case .readDone(let n): return readDone(n)
         case .layerCopied(let a, let b): return layerCopied(a, b)
+        case .clearedAll: return clearedAll
         case .profileSaved(let f): return profileSaved(f)
         case .profileLoaded(let f): return profileLoaded(f)
         case .saveFailed(let e): return saveFailed(e)

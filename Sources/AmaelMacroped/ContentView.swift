@@ -125,6 +125,7 @@ private struct ConnectionBadge: View {
 private struct FooterView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var loc: Localizer
+    @State private var confirmClear = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -133,6 +134,18 @@ private struct FooterView: View {
             }
             Text(loc.s.status(model.status)).font(.callout).foregroundStyle(.secondary).lineLimit(2)
             Spacer()
+            Button(role: .destructive) {
+                confirmClear = true
+            } label: {
+                Label(loc.s.clearAll, systemImage: "trash")
+            }
+            .disabled(model.busy)
+            .confirmationDialog(loc.s.clearAllTitle, isPresented: $confirmClear) {
+                Button(loc.s.clearAll, role: .destructive) { model.clearAll() }
+                Button(loc.s.cancel, role: .cancel) {}
+            } message: {
+                Text(loc.s.clearAllMessage)
+            }
             Button(loc.s.readFromDevice) { model.readFromDevice() }
                 .disabled(!model.isConnected || model.busy)
             Button {

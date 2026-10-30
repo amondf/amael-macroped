@@ -18,6 +18,10 @@ extension Strings {
         layer: { "第 \($0) 层" },
         copyToLayer: { "复制到第 \($0) 层" },
         clearLayer: "清空本层",
+        clearAll: "全部清除",
+        clearAllTitle: "清除所有按键？",
+        clearAllMessage: "将删除全部 3 层中所有按键和旋钮的动作，并写入键盘。灯光设置保持不变。此操作无法撤销。",
+        cancel: "取消",
 
         lighting: "灯光",
         configureLighting: "为本层设置灯光",
@@ -79,6 +83,7 @@ extension Strings {
         readUnsupported: "固件未返回配置（并非所有型号都支持读取）。",
         readDone: { "已从键盘读取配置（\($0) 条记录）。" },
         layerCopied: { "第 \($0) 层已复制到第 \($1) 层。" },
+        clearedAll: "所有动作已删除。点击“写入键盘”以应用。",
         profileSaved: { "配置文件已保存到 \($0)。" },
         profileLoaded: { "已载入配置文件“\($0)”。点击“写入键盘”以应用。" },
         saveFailed: { "无法保存：\($0)" },

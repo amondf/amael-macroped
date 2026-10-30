@@ -18,6 +18,10 @@ extension Strings {
         layer: { "Layer \($0)" },
         copyToLayer: { "Copy to layer \($0)" },
         clearLayer: "Clear this layer",
+        clearAll: "Clear all",
+        clearAllTitle: "Clear every key?",
+        clearAllMessage: "Removes the actions of every key and the knob on all 3 layers and writes it to the keyboard. Lighting is kept. This cannot be undone.",
+        cancel: "Cancel",
 
         lighting: "Lighting",
         configureLighting: "Configure lighting on this layer",
@@ -80,6 +84,7 @@ extension Strings {
         readUnsupported: "The firmware did not return its configuration (not every model supports reading).",
         readDone: { "Configuration read from keyboard (\($0) records)." },
         layerCopied: { "Layer \($0) copied to layer \($1)." },
+        clearedAll: "All actions were removed. Click Write to keyboard to apply.",
         profileSaved: { "Profile saved to \($0)." },
         profileLoaded: { "Profile “\($0)” loaded. Click Write to keyboard to apply it." },
         saveFailed: { "Could not save: \($0)" },

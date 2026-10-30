@@ -74,6 +74,17 @@ final class AppModel: ObservableObject {
         status = .layerCopied(layer + 1, target + 1)
     }
 
+    /// Removes every action from all layers (lighting is kept) and writes it to the keyboard when connected.
+    func clearAll() {
+        for i in profile.layers.indices { profile.layers[i].bindings = [] }
+        hasUnsavedChanges = true
+        if isConnected {
+            writeToDevice()
+        } else {
+            status = .clearedAll
+        }
+    }
+
     func resetToDefault() {
         profile = .defaultProfile(layout: layout)
         hasUnsavedChanges = true

@@ -18,6 +18,10 @@ extension Strings {
         layer: { "Camada \($0)" },
         copyToLayer: { "Copiar para camada \($0)" },
         clearLayer: "Limpar esta camada",
+        clearAll: "Limpar tudo",
+        clearAllTitle: "Limpar todas as teclas?",
+        clearAllMessage: "Remove as ações de todas as teclas e do knob nas 3 camadas e grava no teclado. A iluminação é mantida. Não dá para desfazer.",
+        cancel: "Cancelar",
 
         lighting: "Iluminação",
         configureLighting: "Configurar iluminação nesta camada",
@@ -80,6 +84,7 @@ extension Strings {
         readUnsupported: "O firmware não devolveu a configuração (nem todos os modelos suportam leitura).",
         readDone: { "Configuração lida do teclado (\($0) registros)." },
         layerCopied: { "Camada \($0) copiada para a camada \($1)." },
+        clearedAll: "Todas as ações foram removidas. Clique em Gravar no teclado para aplicar.",
         profileSaved: { "Perfil salvo em \($0)." },
         profileLoaded: { "Perfil “\($0)” carregado. Clique em Gravar no teclado para aplicar." },
         saveFailed: { "Não foi possível salvar: \($0)" },

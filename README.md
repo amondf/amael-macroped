@@ -23,6 +23,7 @@ original por um app 100% nativo, sem dependências externas (SwiftUI + IOKit HID
 - 🎛️ **Knob**: girar à esquerda, pressionar e girar à direita — cada um com sua ação
 - 🗂️ **3 camadas** independentes, cada uma com seu efeito/cor de **LED**
 - 💾 Perfis em JSON (abrir/salvar) e restauração do último perfil automaticamente
+- 🧹 Botão **Limpar tudo** (com confirmação) que zera as ações das 3 camadas no teclado
 - 🌐 Interface em **Português (Brasil), English, Русский e 简体中文** — troca instantânea em *Ajustes* (⌘,)
 - 🧰 **CLI** `macroped` para automação e diagnóstico
 - 🔌 Detecção automática do layout (nº de teclas/knobs) informado pelo firmware
