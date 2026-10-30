@@ -7,10 +7,7 @@ struct SlotEditor: View {
     @EnvironmentObject private var loc: Localizer
     let slot: Slot
 
-    private enum Kind: CaseIterable, Identifiable {
-        case none, keys, media, mouse
-        var id: Self { self }
-    }
+    private enum Kind: CaseIterable { case none, keys, media, mouse }
 
     private func title(_ kind: Kind) -> String {
         switch kind {
@@ -42,19 +39,16 @@ struct SlotEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(loc.s.slotName(slot)).font(.title3.bold())
-                Text(loc.s.layer(model.layer + 1)).font(.caption).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: AppStyle.Spacing.small) {
+            VStack(alignment: .leading, spacing: AppStyle.Spacing.xxxSmall) {
+                Text(loc.s.slotName(slot)).font(AppStyle.Typography.sectionTitle).foregroundStyle(AppColors.textPrimary)
+                Text(loc.s.layer(model.layer + 1)).font(AppStyle.Typography.metadata).foregroundStyle(AppColors.textSecondary)
             }
-            Picker(loc.s.action, selection: kind) {
-                ForEach(Kind.allCases) { Text(title($0)).tag($0) }
-            }
-            .pickerStyle(.segmented)
+            SegmentedControl(options: Kind.allCases, selection: kind, title: title)
 
             switch action {
             case .none:
-                Text(loc.s.noAction).foregroundStyle(.secondary)
+                Card { Text(loc.s.noAction).font(AppStyle.Typography.body).foregroundStyle(AppColors.textSecondary) }
                 Spacer()
             case .keys(let chords):
                 KeysEditor(chords: chords) { model.setAction(.keys($0), for: slot) }
@@ -68,7 +62,6 @@ struct SlotEditor: View {
                 }
             }
         }
-        .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .id(slot)
     }
@@ -82,22 +75,40 @@ private struct OptionGrid<Item: Hashable>: View {
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 8)], spacing: 8) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: AppStyle.Spacing.xSmall)],
+                      spacing: AppStyle.Spacing.xSmall) {
                 ForEach(items, id: \.self) { item in
-                    Button {
-                        pick(item)
-                    } label: {
-                        Text(title(item))
-                            .frame(maxWidth: .infinity, minHeight: 30)
-                            .padding(.horizontal, 6)
-                            .background(RoundedRectangle(cornerRadius: 7)
-                                .fill(item == selected ? Color.accentOrange.opacity(0.85) : Color.secondary.opacity(0.12)))
-                            .foregroundStyle(item == selected ? Color.white : Color.primary)
-                    }
-                    .buttonStyle(.plain)
+                    OptionTile(text: title(item), selected: item == selected) { pick(item) }
                 }
             }
         }
+        .scrollIndicators(.never)
+    }
+}
+
+private struct OptionTile: View {
+    let text: String
+    let selected: Bool
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(text)
+                .font(selected ? AppStyle.Typography.headline : AppStyle.Typography.body)
+                .foregroundStyle(selected ? AppColors.onActionPrimary : AppColors.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, minHeight: 32)
+                .padding(.horizontal, AppStyle.Spacing.xSmall)
+                .background(selected ? AppColors.actionPrimary : (hovering ? AppColors.surfaceCardHover : AppColors.surfaceCard),
+                            in: RoundedRectangle(cornerRadius: AppStyle.Radius.md, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: AppStyle.Radius.md, style: .continuous)
+                    .strokeBorder(selected ? .clear : AppColors.borderSubtle, lineWidth: 0.5))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
     }
 }
 
@@ -114,51 +125,67 @@ private struct KeysEditor: View {
     @State private var textError = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
+        VStack(alignment: .leading, spacing: AppStyle.Spacing.small) {
+            HStack(spacing: AppStyle.Spacing.xSmall) {
                 Button {
                     recording ? stopRecording() : startRecording()
                 } label: {
                     Label(recording ? loc.s.recordingPrompt : loc.s.recordShortcut,
                           systemImage: recording ? "record.circle.fill" : "record.circle")
                 }
-                .tint(recording ? .red : nil)
+                .buttonStyle(.app(recording ? .primary : .secondary))
                 Button {
                     update(chords + [KeyChord(keyCode: HIDKeys.a)])
                 } label: {
                     Label(loc.s.addKey, systemImage: "plus")
                 }
+                .buttonStyle(.app(.quiet))
                 .disabled(chords.count >= MacropedProtocol.maxChords)
                 Spacer()
-                Text("\(chords.count)/\(MacropedProtocol.maxChords)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                Text("\(chords.count)/\(MacropedProtocol.maxChords)")
+                    .font(AppStyle.Typography.metadata.numbers)
+                    .monospacedDigit()
+                    .foregroundStyle(AppColors.textTertiary)
             }
 
             if chords.isEmpty {
-                Text(loc.s.emptyKeysHint).font(.callout).foregroundStyle(.secondary)
-            }
-
-            ScrollView {
-                VStack(spacing: 6) {
-                    ForEach(Array(chords.enumerated()), id: \.offset) { index, chord in
-                        ChordRow(index: index, chord: chord) { new in
-                            var c = chords
-                            if let new { c[index] = new } else { c.remove(at: index) }
-                            update(c)
+                Card {
+                    Text(loc.s.emptyKeysHint).font(AppStyle.Typography.callout).foregroundStyle(AppColors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                ScrollView {
+                    Card(padding: 0) {
+                        VStack(spacing: 0) {
+                            ForEach(Array(chords.enumerated()), id: \.offset) { index, chord in
+                                if index > 0 { CardDivider() }
+                                ChordRow(index: index, chord: chord) { new in
+                                    var c = chords
+                                    if let new { c[index] = new } else { c.remove(at: index) }
+                                    update(c)
+                                }
+                            }
                         }
                     }
                 }
+                .scrollIndicators(.never)
+                .fixedSize(horizontal: false, vertical: true)
             }
 
-            GroupBox(loc.s.typeTextTitle) {
-                HStack {
+            Spacer(minLength: 0)
+
+            VStack(alignment: .leading, spacing: AppStyle.Spacing.xxSmallPlus) {
+                Text(loc.s.typeTextTitle).font(AppStyle.Typography.headline).foregroundStyle(AppColors.textPrimary)
+                HStack(spacing: AppStyle.Spacing.xSmall) {
                     TextField(loc.s.typeTextPlaceholder, text: $text)
-                        .textFieldStyle(.roundedBorder)
+                        .modifier(FieldBackground())
                         .onSubmit(convertText)
-                    Button(loc.s.convertToMacro, action: convertText).disabled(text.isEmpty)
+                    Button(loc.s.convertToMacro, action: convertText)
+                        .buttonStyle(.app(.secondary))
+                        .disabled(text.isEmpty)
                 }
-                .padding(4)
                 if textError {
-                    Text(loc.s.asciiOnly).font(.caption).foregroundStyle(.red)
+                    Text(loc.s.asciiOnly).font(AppStyle.Typography.callout).foregroundStyle(AppColors.statusDangerText)
                 }
             }
         }
@@ -203,34 +230,43 @@ private struct ChordRow: View {
     let change: (KeyChord?) -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
-            Text("\(index + 1)").font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 18)
-            modifier("⌃", .control, help: "Control")
-            modifier("⌥", .option, help: "Option")
-            modifier("⇧", .shift, help: "Shift")
-            modifier("⌘", .command, help: "Command")
-            Picker("", selection: Binding(get: { chord.keyCode }, set: {
-                change(KeyChord(modifiers: chord.modifiers, keyCode: $0))
-            })) {
-                Text(loc.s.modifiersOnly).tag(UInt8(0))
+        HStack(spacing: AppStyle.Spacing.xSmall) {
+            Text("\(index + 1)")
+                .font(AppStyle.Typography.metadata.numbers)
+                .monospacedDigit()
+                .foregroundStyle(AppColors.textTertiary)
+                .frame(width: 18)
+            HStack(spacing: AppStyle.Spacing.xxSmall) {
+                modifier("⌃", .control, help: "Control")
+                modifier("⌥", .option, help: "Option")
+                modifier("⇧", .shift, help: "Shift")
+                modifier("⌘", .command, help: "Command")
+            }
+            Dropdown(value: chord.keyCode == 0 ? loc.s.modifiersOnly : loc.s.keyName(chord.keyCode), minWidth: 150) {
+                Button(loc.s.modifiersOnly) { set(0) }
                 ForEach(HIDKeys.groups, id: \.self) { group in
-                    Section(loc.s.keyGroup(group)) {
-                        ForEach(HIDKeys.all.filter { $0.group == group }) { Text(loc.s.keyName($0.code)).tag($0.code) }
+                    Menu(loc.s.keyGroup(group)) {
+                        ForEach(HIDKeys.all.filter { $0.group == group }) { entry in
+                            Button(loc.s.keyName(entry.code)) { set(entry.code) }
+                        }
                     }
                 }
             }
-            .labelsHidden()
-            .frame(minWidth: 150)
+            Spacer(minLength: 0)
             Button {
                 change(nil)
             } label: {
-                Image(systemName: "trash")
+                Label(loc.s.remove, systemImage: "trash").labelStyle(.iconOnly)
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.app(.quiet, size: .small, width: .square))
             .help(loc.s.remove)
         }
-        .padding(6)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.secondary.opacity(0.08)))
+        .padding(.horizontal, AppStyle.Spacing.small)
+        .padding(.vertical, AppStyle.Spacing.xSmall)
+    }
+
+    private func set(_ code: UInt8) {
+        change(KeyChord(modifiers: chord.modifiers, keyCode: code))
     }
 
     private func modifier(_ symbol: String, _ mod: Modifiers, help: String) -> some View {
@@ -241,10 +277,12 @@ private struct ChordRow: View {
             change(KeyChord(modifiers: m, keyCode: chord.keyCode))
         } label: {
             Text(symbol)
-                .font(.system(size: 14, weight: .semibold))
-                .frame(width: 26, height: 24)
-                .background(RoundedRectangle(cornerRadius: 5).fill(on ? Color.accentOrange : Color.secondary.opacity(0.15)))
-                .foregroundStyle(on ? Color.white : Color.primary)
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 26, height: 26)
+                .background(on ? AppColors.actionPrimary : AppColors.fillSecondary,
+                            in: RoundedRectangle(cornerRadius: AppStyle.Radius.sm, style: .continuous))
+                .foregroundStyle(on ? AppColors.onActionPrimary : AppColors.textSecondary)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .help(help)

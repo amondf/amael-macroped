@@ -28,10 +28,11 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/AmaelMacroped" "$APP/Contents/MacOS/AmaelMacroped"
 cp "$BIN_DIR/macroped" "$APP/Contents/MacOS/macroped"
+cp Resources/Fonts/OnestText.ttf Resources/Fonts/Onest-OFL.txt "$APP/Contents/Resources/"
 
 echo "==> Gerando ícone"
 TMP="$(mktemp -d)"
-swift scripts/make-icon.swift "$TMP/icon.png"
+swift scripts/make-icon.swift "$TMP/icon.png" "${ICON_VARIANT:-amber}"
 ICONSET="$TMP/AppIcon.iconset"
 mkdir -p "$ICONSET"
 for s in 16 32 128 256 512; do

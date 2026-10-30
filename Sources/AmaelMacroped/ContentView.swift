@@ -1,3 +1,4 @@
+import AppKit
 import MacropedKit
 import SwiftUI
 
@@ -8,31 +9,39 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             HeaderView()
-            Divider()
-            HStack(spacing: 0) {
+            HStack(alignment: .top, spacing: AppStyle.Spacing.large) {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        LayerBar()
+                    VStack(alignment: .leading, spacing: AppStyle.Spacing.small) {
+                        SectionHeader(title: loc.s.layers) { LayerMenu() }
+                        SegmentedControl(options: Array(0..<DeviceProfile.layerCount), selection: $model.layer) {
+                            loc.s.layer($0 + 1)
+                        }
                         PadView()
+                        SectionHeader(loc.s.lighting).padding(.top, AppStyle.Spacing.small)
                         LEDSection()
                     }
-                    .padding(20)
+                    .padding(.bottom, AppStyle.Spacing.medium)
                 }
-                .frame(minWidth: 400, idealWidth: 440)
-                Divider()
+                .scrollIndicators(.never)
+                .frame(width: 448)
+
                 Group {
                     if let slot = model.selectedSlot {
                         SlotEditor(slot: slot)
                     } else {
-                        Text(loc.s.selectSlotHint).foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        Card {
+                            Text(loc.s.selectSlotHint).font(AppStyle.Typography.body).foregroundStyle(AppColors.textSecondary)
+                        }
                     }
                 }
-                .frame(minWidth: 400, maxWidth: .infinity)
+                .frame(minWidth: 400, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            Divider()
+            .padding(.horizontal, AppStyle.Spacing.large)
+            Rectangle().fill(AppColors.borderSubtle).frame(height: 0.5)
             FooterView()
         }
+        .background(AppColors.surfaceBase)
+        .tint(AppColors.actionPrimary)
         .alert("Amael Macroped", isPresented: Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -47,32 +56,31 @@ private struct HeaderView: View {
     @EnvironmentObject private var loc: Localizer
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "keyboard.badge.ellipsis")
-                .font(.system(size: 26))
-                .foregroundStyle(Color.accentOrange)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Amael Macroped").font(.title2.bold())
-                Text(loc.s.appSubtitle).font(.caption).foregroundStyle(.secondary)
+        HStack(spacing: AppStyle.Spacing.small) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 40, height: 40)
+            VStack(alignment: .leading, spacing: AppStyle.Spacing.xxxSmall) {
+                Text("Amael Macroped").font(AppStyle.Typography.pageTitle).foregroundStyle(AppColors.textPrimary)
+                Text(loc.s.appSubtitle).font(AppStyle.Typography.callout).foregroundStyle(AppColors.textSecondary)
             }
             Spacer()
             if let url = Support.donationURL {
                 Link(destination: url) {
-                    Label("Buy me a coffee", systemImage: "cup.and.saucer.fill")
-                        .font(.callout.weight(.medium))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.yellow.opacity(0.85), in: Capsule())
-                        .foregroundStyle(.black)
+                    Label {
+                        Text("Buy me a coffee")
+                    } icon: {
+                        Image(systemName: "cup.and.saucer.fill").foregroundStyle(AppColors.accentCelebrate)
+                    }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.app(.secondary))
                 .help(loc.s.donateHelp)
             }
-            ConnectionBadge()
+            ConnectionTag()
             SettingsButton()
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, AppStyle.Spacing.large)
+        .padding(.vertical, AppStyle.Spacing.medium)
     }
 }
 
@@ -82,43 +90,32 @@ private struct SettingsButton: View {
     var body: some View {
         Group {
             if #available(macOS 14, *) {
-                SettingsLink { Image(systemName: "gearshape") }
+                SettingsLink { Label(loc.s.settings, systemImage: "gearshape").labelStyle(.iconOnly) }
             } else {
                 Button {
                     NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
                 } label: {
-                    Image(systemName: "gearshape")
+                    Label(loc.s.settings, systemImage: "gearshape").labelStyle(.iconOnly)
                 }
             }
         }
-        .buttonStyle(.borderless)
-        .font(.system(size: 16))
+        .buttonStyle(.app(.quiet, width: .square))
         .help(loc.s.settings)
     }
 }
 
-private struct ConnectionBadge: View {
+private struct ConnectionTag: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var loc: Localizer
 
     var body: some View {
-        HStack(spacing: 8) {
-            Circle().fill(model.isConnected ? Color.green : Color.red).frame(width: 9, height: 9)
-            switch model.connection {
-            case .disconnected:
-                Text(loc.s.disconnected).font(.callout)
-            case .connected(let info, let layout):
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(info.product).font(.callout.weight(.medium))
-                    Text(String(format: "%04X:%04X", info.vendorID, info.productID)
-                         + (layout.map { loc.s.keysKnobs($0.keys, $0.knobs) } ?? ""))
-                        .font(.caption2.monospaced()).foregroundStyle(.secondary)
-                }
-            }
+        switch model.connection {
+        case .disconnected:
+            StatusTag(kind: .unsure, text: loc.s.disconnected)
+        case .connected(let info, let layout):
+            StatusTag(kind: .safe, text: info.product + (layout.map { loc.s.keysKnobs($0.keys, $0.knobs) } ?? ""))
+                .help(String(format: "VID %04X · PID %04X", info.vendorID, info.productID))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(.quaternary.opacity(0.6), in: Capsule())
     }
 }
 
@@ -128,17 +125,21 @@ private struct FooterView: View {
     @State private var confirmClear = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppStyle.Spacing.xSmall) {
             if model.busy {
-                ProgressView(value: model.progress).frame(width: 120)
+                ProgressView(value: model.progress).frame(width: 100)
             }
-            Text(loc.s.status(model.status)).font(.callout).foregroundStyle(.secondary).lineLimit(2)
-            Spacer()
-            Button(role: .destructive) {
+            Text(loc.s.status(model.status))
+                .font(AppStyle.Typography.callout)
+                .foregroundStyle(AppColors.textSecondary)
+                .lineLimit(2)
+            Spacer(minLength: AppStyle.Spacing.small)
+            Button {
                 confirmClear = true
             } label: {
                 Label(loc.s.clearAll, systemImage: "trash")
             }
+            .buttonStyle(.app(.quiet))
             .disabled(model.busy)
             .confirmationDialog(loc.s.clearAllTitle, isPresented: $confirmClear) {
                 Button(loc.s.clearAll, role: .destructive) { model.clearAll() }
@@ -147,48 +148,48 @@ private struct FooterView: View {
                 Text(loc.s.clearAllMessage)
             }
             Button(loc.s.readFromDevice) { model.readFromDevice() }
+                .buttonStyle(.app(.secondary))
                 .disabled(!model.isConnected || model.busy)
             Button {
                 model.writeToDevice()
             } label: {
-                Label(loc.s.writeToDevice + (model.hasUnsavedChanges ? " •" : ""), systemImage: "square.and.arrow.down")
+                Label(loc.s.writeToDevice + (model.hasUnsavedChanges ? " •" : ""), systemImage: "arrow.down.to.line")
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.accentOrange)
+            .buttonStyle(.app(.primary))
             .disabled(!model.isConnected || model.busy)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, AppStyle.Spacing.large)
+        .padding(.vertical, AppStyle.Spacing.small)
+        .background(AppColors.surfaceBase)
     }
 }
 
 // MARK: Layers
 
-private struct LayerBar: View {
+private struct LayerMenu: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var loc: Localizer
 
     var body: some View {
-        HStack {
-            Picker(loc.s.layer(model.layer + 1), selection: $model.layer) {
-                ForEach(0..<DeviceProfile.layerCount, id: \.self) { Text(loc.s.layer($0 + 1)).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            Menu {
-                ForEach(0..<DeviceProfile.layerCount, id: \.self) { target in
-                    if target != model.layer {
-                        Button(loc.s.copyToLayer(target + 1)) { model.copyLayer(to: target) }
-                    }
+        Menu {
+            ForEach(0..<DeviceProfile.layerCount, id: \.self) { target in
+                if target != model.layer {
+                    Button(loc.s.copyToLayer(target + 1)) { model.copyLayer(to: target) }
                 }
-                Divider()
-                Button(loc.s.clearLayer, role: .destructive) { model.clearLayer() }
-            } label: {
-                Image(systemName: "ellipsis.circle")
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            Divider()
+            Button(loc.s.clearLayer, role: .destructive) { model.clearLayer() }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(AppColors.textTertiary)
+                .frame(width: 24, height: 24)
+                .contentShape(Rectangle())
         }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
     }
 }
 
@@ -199,46 +200,52 @@ private struct LEDSection: View {
     @EnvironmentObject private var loc: Localizer
 
     var body: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                Toggle(loc.s.configureLighting, isOn: Binding(
-                    get: { model.led != nil },
-                    set: { model.led = $0 ? LEDConfig(mode: 1, color: .orange) : nil }
-                ))
+        Card {
+            VStack(alignment: .leading, spacing: AppStyle.Spacing.small) {
+                CardRow(title: loc.s.configureLighting, caption: loc.s.lightingNote) {
+                    Toggle("", isOn: Binding(
+                        get: { model.led != nil },
+                        set: { model.led = $0 ? LEDConfig(mode: 1, color: .orange) : nil }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .tint(AppColors.actionPrimary)
+                }
                 if let led = model.led {
-                    Picker(loc.s.effect, selection: Binding(
-                        get: { led.mode },
-                        set: { model.led = LEDConfig(mode: $0, color: led.color) }
-                    )) {
-                        Text(loc.s.effectOff).tag(UInt8(0))
-                        ForEach(1...5, id: \.self) { Text(loc.s.effectN($0)).tag(UInt8($0)) }
-                    }
-                    .frame(maxWidth: 260)
-                    HStack(spacing: 8) {
-                        Text(loc.s.color)
-                        ForEach(LEDColor.allCases, id: \.self) { color in
-                            Button {
-                                model.led = LEDConfig(mode: led.mode, color: color)
-                            } label: {
-                                Circle().fill(color.swatch).frame(width: 20, height: 20)
-                                    .overlay(Circle().stroke(Color.primary, lineWidth: led.color == color ? 2 : 0).padding(-3))
+                    CardDivider()
+                    CardRow(title: loc.s.effect) {
+                        Dropdown(value: led.mode == 0 ? loc.s.effectOff : loc.s.effectN(Int(led.mode)), minWidth: 130) {
+                            Button(loc.s.effectOff) { model.led = LEDConfig(mode: 0, color: led.color) }
+                            ForEach(1...5, id: \.self) { n in
+                                Button(loc.s.effectN(n)) { model.led = LEDConfig(mode: UInt8(n), color: led.color) }
                             }
-                            .buttonStyle(.plain)
-                            .help(loc.s.colorName(color))
                         }
                     }
-                    Text(loc.s.lightingNote).font(.caption).foregroundStyle(.secondary)
+                    CardDivider()
+                    CardRow(title: loc.s.color) {
+                        HStack(spacing: AppStyle.Spacing.xSmall) {
+                            ForEach(LEDColor.allCases, id: \.self) { color in
+                                Button {
+                                    model.led = LEDConfig(mode: led.mode, color: color)
+                                } label: {
+                                    Circle().fill(color.swatch).frame(width: 16, height: 16)
+                                        .padding(AppStyle.Spacing.xxxSmall)
+                                        .overlay(Circle().strokeBorder(AppColors.actionPrimary,
+                                                                       lineWidth: led.color == color ? 1.5 : 0))
+                                }
+                                .buttonStyle(.plain)
+                                .help(loc.s.colorName(color))
+                            }
+                        }
+                    }
                 }
             }
-            .padding(6)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Label(loc.s.lighting, systemImage: "lightbulb")
         }
     }
 }
 
 extension LEDColor {
+    /// The physical LED colour (not a theme colour: it shows what the keyboard will light).
     var swatch: Color {
         switch self {
         case .red: return .red
@@ -250,8 +257,4 @@ extension LEDColor {
         case .purple: return .purple
         }
     }
-}
-
-extension Color {
-    static let accentOrange = Color(red: 1.0, green: 0.55, blue: 0.15)
 }

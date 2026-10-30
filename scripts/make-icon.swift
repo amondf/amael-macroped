@@ -1,57 +1,77 @@
-// Renders the app icon (1024×1024 PNG). Usage: swift scripts/make-icon.swift <out.png>
+// Renders the app icon (1024×1024 PNG) in the Purge design-system icon style: a continuous
+// squircle with a vivid vertical gradient and a frosted-white glyph (here, the macropad itself).
+// Usage: swift scripts/make-icon.swift <out.png> [amber|graphite]
 import AppKit
 
-let size: CGFloat = 1024
-let out = CommandLine.arguments.dropFirst().first ?? "AppIcon.png"
-let image = NSImage(size: NSSize(width: size, height: size))
-image.lockFocus()
+let args = Array(CommandLine.arguments.dropFirst())
+let out = args.first ?? "AppIcon.png"
+let variant = args.count > 1 ? args[1] : "amber"
 
-// Background: rounded "squircle" with a warm gradient (LED glow).
-let bg = NSBezierPath(roundedRect: NSRect(x: 64, y: 64, width: 896, height: 896), xRadius: 200, yRadius: 200)
-NSGradient(colors: [NSColor(calibratedRed: 0.12, green: 0.12, blue: 0.14, alpha: 1),
-                    NSColor(calibratedRed: 0.22, green: 0.13, blue: 0.06, alpha: 1)])!.draw(in: bg, angle: -90)
-
-// Acrylic plate.
-let plate = NSBezierPath(roundedRect: NSRect(x: 150, y: 330, width: 724, height: 360), xRadius: 56, yRadius: 56)
-NSGradient(colors: [NSColor(calibratedRed: 1.0, green: 0.62, blue: 0.22, alpha: 0.95),
-                    NSColor(calibratedRed: 0.95, green: 0.38, blue: 0.08, alpha: 0.95)])!.draw(in: plate, angle: -90)
-
-// Three keycaps.
-for i in 0..<3 {
-    let x = 196 + CGFloat(i) * 168
-    let shadow = NSBezierPath(roundedRect: NSRect(x: x, y: 400, width: 140, height: 140), xRadius: 22, yRadius: 22)
-    NSColor(calibratedWhite: 0, alpha: 0.35).setFill()
-    shadow.fill()
-    let cap = NSBezierPath(roundedRect: NSRect(x: x, y: 420, width: 140, height: 140), xRadius: 22, yRadius: 22)
-    NSGradient(colors: [NSColor(calibratedWhite: 0.28, alpha: 1), NSColor(calibratedWhite: 0.08, alpha: 1)])!.draw(in: cap, angle: -90)
+func hex(_ v: UInt32, _ a: CGFloat = 1) -> NSColor {
+    NSColor(srgbRed: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255,
+            blue: CGFloat(v & 0xFF) / 255, alpha: a)
 }
 
-// Knob.
-let knobRect = NSRect(x: 700, y: 405, width: 150, height: 150)
-NSGradient(colors: [NSColor(calibratedWhite: 0.55, alpha: 1), NSColor(calibratedWhite: 0.05, alpha: 1)])!
-    .draw(in: NSBezierPath(ovalIn: knobRect), angle: -90)
-NSColor(calibratedWhite: 0.85, alpha: 1).setStroke()
-let ring = NSBezierPath(ovalIn: knobRect.insetBy(dx: 14, dy: 14))
-ring.lineWidth = 6
-ring.stroke()
-let tick = NSBezierPath()
-tick.move(to: NSPoint(x: knobRect.midX, y: knobRect.maxY - 22))
-tick.line(to: NSPoint(x: knobRect.midX, y: knobRect.maxY - 58))
-tick.lineWidth = 10
-tick.lineCapStyle = .round
-NSColor.white.setStroke()
-tick.stroke()
+let palette: (top: NSColor, bottom: NSColor, glyphBottom: NSColor, shadow: NSColor) = variant == "graphite"
+    ? (hex(0x4A4845), hex(0x1E1D1C), hex(0xDAD7D2), hex(0x000000, 0.45))
+    : (hex(0xFFB340), hex(0xF27405), hex(0xFFE7CC), hex(0x8A3A00, 0.35))
 
-// Wordmark.
-let style = NSMutableParagraphStyle()
-style.alignment = .center
-let attrs: [NSAttributedString.Key: Any] = [
-    .font: NSFont.systemFont(ofSize: 120, weight: .heavy),
-    .foregroundColor: NSColor(calibratedRed: 1.0, green: 0.66, blue: 0.3, alpha: 1),
-    .paragraphStyle: style,
-]
-NSString(string: "AMAEL").draw(in: NSRect(x: 64, y: 140, width: 896, height: 150), withAttributes: attrs)
+let size: CGFloat = 1024
+let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size), pixelsHigh: Int(size), bitsPerSample: 8,
+                           samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                           bytesPerRow: 0, bitsPerPixel: 0)!
+NSGraphicsContext.saveGraphicsState()
+NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
-image.unlockFocus()
-let rep = NSBitmapImageRep(data: image.tiffRepresentation!)!
+// macOS icon grid: 824pt body centred on a 1024 canvas, with a soft drop shadow.
+let body = NSRect(x: 100, y: 100, width: 824, height: 824)
+let squircle = NSBezierPath(roundedRect: body, xRadius: 185, yRadius: 185)
+NSGraphicsContext.saveGraphicsState()
+let drop = NSShadow()
+drop.shadowColor = NSColor.black.withAlphaComponent(0.28)
+drop.shadowOffset = NSSize(width: 0, height: -12)
+drop.shadowBlurRadius = 28
+drop.set()
+palette.bottom.setFill()
+squircle.fill()
+NSGraphicsContext.restoreGraphicsState()
+NSGradient(starting: palette.top, ending: palette.bottom)!.draw(in: squircle, angle: -90)
+
+// Soft top sheen.
+NSGraphicsContext.saveGraphicsState()
+squircle.addClip()
+NSGradient(colors: [NSColor.white.withAlphaComponent(0.18), NSColor.white.withAlphaComponent(0)])!
+    .draw(in: NSRect(x: 100, y: 560, width: 824, height: 364), angle: -90)
+NSGraphicsContext.restoreGraphicsState()
+
+// Glyph: the macropad plate with three key cut-outs and a knob well, plus the knob.
+let plate = NSRect(x: 192, y: 362, width: 640, height: 300)
+let glyph = NSBezierPath(roundedRect: plate, xRadius: 72, yRadius: 72)
+for i in 0..<3 {
+    glyph.append(NSBezierPath(roundedRect: NSRect(x: 240 + CGFloat(i) * 122, y: 462, width: 100, height: 100),
+                              xRadius: 26, yRadius: 26))
+}
+let well = NSRect(x: 627, y: 427, width: 170, height: 170)
+glyph.append(NSBezierPath(ovalIn: well))
+glyph.windingRule = .evenOdd
+
+let knob = NSBezierPath(ovalIn: well.insetBy(dx: 27, dy: 27))
+knob.append(NSBezierPath(roundedRect: NSRect(x: well.midX - 6, y: well.maxY - 27 - 44, width: 12, height: 34),
+                         xRadius: 6, yRadius: 6))
+knob.windingRule = .evenOdd
+
+for shape in [glyph, knob] {
+    NSGraphicsContext.saveGraphicsState()
+    let s = NSShadow()
+    s.shadowColor = palette.shadow
+    s.shadowOffset = NSSize(width: 0, height: -10)
+    s.shadowBlurRadius = 24
+    s.set()
+    NSColor.white.setFill()
+    shape.fill()
+    NSGraphicsContext.restoreGraphicsState()
+    NSGradient(starting: .white, ending: palette.glyphBottom)!.draw(in: shape, angle: -90)
+}
+
+NSGraphicsContext.restoreGraphicsState()
 try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: out))

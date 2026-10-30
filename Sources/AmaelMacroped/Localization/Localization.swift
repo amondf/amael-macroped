@@ -60,6 +60,27 @@ final class Localizer: ObservableObject {
     }
 }
 
+enum AppAppearance: String, CaseIterable, Identifiable {
+    case auto, light, dark
+    var id: String { rawValue }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .auto: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+
+    func title(_ s: Strings) -> String {
+        switch self {
+        case .auto: return s.appearanceAuto
+        case .light: return s.appearanceLight
+        case .dark: return s.appearanceDark
+        }
+    }
+}
+
 /// Status / alert messages kept language-independent so they re-render when the language changes.
 enum StatusMessage: Equatable {
     case searching
@@ -94,6 +115,12 @@ struct Strings {
     let keysKnobs: (Int, Int) -> String
     let donateHelp: String
     let settings: String
+    let layers: String
+    let appearance: String
+    let appearanceCaption: String
+    let appearanceAuto: String
+    let appearanceLight: String
+    let appearanceDark: String
     let language: String
     let languageNote: String
 

@@ -5,6 +5,12 @@ extension Strings {
         keysKnobs: { " · \($0) 个按键 · \($1) 个旋钮" },
         donateHelp: "捐赠支持本项目",
         settings: "设置",
+        layers: "层",
+        appearance: "外观",
+        appearanceCaption: "选择浅色或深色外观，或跟随系统设置。",
+        appearanceAuto: "自动",
+        appearanceLight: "浅色",
+        appearanceDark: "深色",
         language: "语言",
         languageNote: "语言会立即在整个应用中切换。",
 

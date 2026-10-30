@@ -5,6 +5,12 @@ extension Strings {
         keysKnobs: { " · клавиш: \($0) · энкодеров: \($1)" },
         donateHelp: "Поддержите проект пожертвованием",
         settings: "Настройки",
+        layers: "Слои",
+        appearance: "Оформление",
+        appearanceCaption: "Выберите светлое или тёмное оформление либо системную настройку.",
+        appearanceAuto: "Авто",
+        appearanceLight: "Светлое",
+        appearanceDark: "Тёмное",
         language: "Язык",
         languageNote: "Язык меняется сразу во всём приложении.",
 

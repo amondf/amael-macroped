@@ -5,6 +5,12 @@ extension Strings {
         keysKnobs: { " · \($0) keys · \($1) knob" },
         donateHelp: "Support the project with a donation",
         settings: "Settings",
+        layers: "Layers",
+        appearance: "Appearance",
+        appearanceCaption: "Choose a light or dark look, or match your system setting.",
+        appearanceAuto: "Auto",
+        appearanceLight: "Light",
+        appearanceDark: "Dark",
         language: "Language",
         languageNote: "The language changes immediately across the whole app.",
 

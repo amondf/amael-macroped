@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" alt="Amael Macroped"></p>
+
 # Amael Macroped
 
 **Configurador nativo para Apple Silicon (arm64) dos mini teclados/macropads USB baseados em CH57x** — os
@@ -7,7 +9,9 @@ modelos genéricos de 1 a 15 teclas com knob(s) rotativos vendidos como *"Mini K
 Como a Apple anunciou o fim do Rosetta 2 para apps Intel no macOS 28, este projeto substitui o utilitário
 original por um app 100% nativo, sem dependências externas (SwiftUI + IOKit HID), com código aberto sob licença MIT.
 
-![Amael Macroped](docs/screenshot.png)
+| Claro | Escuro |
+|---|---|
+| ![Amael Macroped — claro](docs/screenshot.png) | ![Amael Macroped — escuro](docs/screenshot-dark.png) |
 
 > 🇺🇸 **English summary** — Native Apple Silicon configurator for CH57x-based USB macro pads
 > (VID `0x1189`, PIDs `0x8840/0x8842/0x883x/0x885x`). Replaces the vendor's Intel-only `MINI_KEYBOARD.app`.
@@ -24,6 +28,7 @@ original por um app 100% nativo, sem dependências externas (SwiftUI + IOKit HID
 - 🗂️ **3 camadas** independentes, cada uma com seu efeito/cor de **LED**
 - 💾 Perfis em JSON (abrir/salvar) e restauração do último perfil automaticamente
 - 🧹 Botão **Limpar tudo** (com confirmação) que zera as ações das 3 camadas no teclado
+- 🎨 Visual no design system do [Purge](https://github.com/jithin-sabu/purge-app) (fonte Onest, neutros grafite), com aparência Automático/Claro/Escuro
 - 🌐 Interface em **Português (Brasil), English, Русский e 简体中文** — troca instantânea em *Ajustes* (⌘,)
 - 🧰 **CLI** `macroped` para automação e diagnóstico
 - 🔌 Detecção automática do layout (nº de teclas/knobs) informado pelo firmware
@@ -157,4 +162,4 @@ Se o Amael Macroped te ajudou, considere pagar um café — o botão **Buy me a 
 
 ## Licença
 
-[MIT](LICENSE). Este projeto não é afiliado ao fabricante do dispositivo nem distribui o software original.
+[MIT](LICENSE). O design system é adaptado do Purge (MIT) e a fonte Onest é distribuída sob a SIL OFL 1.1 — veja [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Este projeto não é afiliado ao fabricante do dispositivo nem distribui o software original.

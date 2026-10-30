@@ -1,7 +1,7 @@
 import MacropedKit
 import SwiftUI
 
-/// Visual replica of the pad: keys in a row (wrapping every 5) plus knobs on the right.
+/// Visual replica of the pad: keys in rows of five plus knobs on the right.
 struct PadView: View {
     @EnvironmentObject private var model: AppModel
 
@@ -11,34 +11,30 @@ struct PadView: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 18) {
-            VStack(spacing: 12) {
-                ForEach(keyRows, id: \.self) { row in
-                    HStack(spacing: 12) {
-                        ForEach(row, id: \.self) { n in KeyCap(slot: .key(n), title: "K\(n)") }
+        Card(padding: AppStyle.Spacing.large) {
+            HStack(alignment: .center, spacing: AppStyle.Spacing.large) {
+                VStack(spacing: AppStyle.Spacing.small) {
+                    ForEach(keyRows, id: \.self) { row in
+                        HStack(spacing: AppStyle.Spacing.small) {
+                            ForEach(row, id: \.self) { KeyCap(slot: .key($0), title: "K\($0)") }
+                        }
+                    }
+                }
+                if model.layout.knobs > 0 {
+                    VStack(spacing: AppStyle.Spacing.medium) {
+                        ForEach(0..<model.layout.knobs, id: \.self) { KnobView(index: $0) }
                     }
                 }
             }
-            if model.layout.knobs > 0 {
-                VStack(spacing: 14) {
-                    ForEach(0..<model.layout.knobs, id: \.self) { KnobView(index: $0) }
-                }
-            }
+            .frame(maxWidth: .infinity)
         }
-        .padding(22)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(LinearGradient(colors: [Color.accentOrange.opacity(0.22), Color.accentOrange.opacity(0.06)],
-                                     startPoint: .top, endPoint: .bottom))
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.accentOrange.opacity(0.45), lineWidth: 1))
-        )
     }
 }
 
 private struct KeyCap: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var loc: Localizer
+    @State private var hovering = false
     let slot: Slot
     let title: String
 
@@ -47,24 +43,25 @@ private struct KeyCap: View {
         Button {
             model.selectedSlot = slot
         } label: {
-            VStack(spacing: 6) {
-                Text(title).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+            VStack(spacing: AppStyle.Spacing.xxSmall) {
+                Text(title).font(AppStyle.Typography.micro).foregroundStyle(AppColors.textTertiary)
                 Text(loc.s.summary(model.action(for: slot)))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AppStyle.Typography.rowTitle)
+                    .foregroundStyle(AppColors.textPrimary)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                     .minimumScaleFactor(0.7)
             }
-            .padding(6)
-            .frame(width: 78, height: 78)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(nsColor: .windowBackgroundColor))
-                    .shadow(color: .black.opacity(0.25), radius: 2, y: 2)
-            )
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? Color.accentOrange : .clear, lineWidth: 2.5))
+            .padding(AppStyle.Spacing.xSmall)
+            .frame(width: 76, height: 76)
+            .background(hovering && !selected ? AppColors.fillSecondaryHover : AppColors.fillSecondary,
+                        in: RoundedRectangle(cornerRadius: AppStyle.Radius.lg, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppStyle.Radius.lg, style: .continuous)
+                .strokeBorder(selected ? AppColors.actionPrimary : AppColors.borderSubtle, lineWidth: selected ? 1.5 : 0.5))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { hovering = $0 }
         .help(loc.s.slotName(slot))
     }
 }
@@ -75,40 +72,39 @@ private struct KnobView: View {
     let index: Int
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 6) {
-                part(.knobLeft(index), icon: "arrow.counterclockwise")
+        VStack(spacing: AppStyle.Spacing.xSmall) {
+            HStack(spacing: AppStyle.Spacing.xSmall) {
+                arrow(.knobLeft(index), icon: "arrow.counterclockwise")
                 Button {
                     model.selectedSlot = .knobPress(index)
                 } label: {
                     ZStack {
-                        Circle().fill(LinearGradient(colors: [.gray.opacity(0.9), .black], startPoint: .top, endPoint: .bottom))
-                        Circle().stroke(Color.white.opacity(0.5), lineWidth: 1).padding(4)
-                        Image(systemName: "circle.fill").font(.system(size: 9)).foregroundStyle(.white.opacity(0.8))
+                        Circle().fill(AppColors.actionPrimary)
+                        Circle().strokeBorder(AppColors.onActionPrimary.opacity(0.25), lineWidth: 1)
+                            .padding(AppStyle.Spacing.xxSmallPlus)
+                        Capsule().fill(AppColors.onActionPrimary).frame(width: 3, height: 10)
+                            .offset(y: -15)
                     }
-                    .frame(width: 58, height: 58)
-                    .overlay(Circle().stroke(model.selectedSlot == .knobPress(index) ? Color.accentOrange : .clear, lineWidth: 2.5).padding(-3))
+                    .frame(width: 56, height: 56)
+                    .overlay(Circle().strokeBorder(model.selectedSlot == .knobPress(index) ? AppColors.actionPrimary : .clear,
+                                                   lineWidth: 1.5)
+                        .padding(-AppStyle.Spacing.xxSmall))
                 }
                 .buttonStyle(.plain)
                 .help(loc.s.slotName(.knobPress(index)) + " — " + loc.s.summary(model.action(for: .knobPress(index))))
-                part(.knobRight(index), icon: "arrow.clockwise")
+                arrow(.knobRight(index), icon: "arrow.clockwise")
             }
-            Text(loc.s.knob(index + 1)).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+            Text(loc.s.knob(index + 1)).font(AppStyle.Typography.micro).foregroundStyle(AppColors.textTertiary)
         }
     }
 
-    private func part(_ slot: Slot, icon: String) -> some View {
+    private func arrow(_ slot: Slot, icon: String) -> some View {
         Button {
             model.selectedSlot = slot
         } label: {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
-                .frame(width: 30, height: 30)
-                .background(Circle().fill(Color(nsColor: .windowBackgroundColor)))
-                .overlay(Circle().stroke(model.selectedSlot == slot ? Color.accentOrange : Color.secondary.opacity(0.3),
-                                         lineWidth: model.selectedSlot == slot ? 2.5 : 1))
+            Label(loc.s.slotName(slot), systemImage: icon).labelStyle(.iconOnly)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.app(model.selectedSlot == slot ? .primary : .secondary, size: .small, width: .square))
         .help(loc.s.slotName(slot) + " — " + loc.s.summary(model.action(for: slot)))
     }
 }

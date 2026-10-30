@@ -7,6 +7,7 @@ struct AmaelMacropedApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = AppModel()
     @StateObject private var loc = Localizer()
+    @AppStorage("appearance") private var appearance: AppAppearance = .auto
 
     var body: some Scene {
         WindowGroup("Amael Macroped") {
@@ -14,7 +15,8 @@ struct AmaelMacropedApp: App {
                 .environmentObject(model)
                 .environmentObject(loc)
                 .environment(\.locale, loc.language.locale)
-                .frame(minWidth: 860, minHeight: 560)
+                .preferredColorScheme(appearance.colorScheme)
+                .frame(minWidth: 940, minHeight: 600)
         }
         .windowResizability(.contentMinSize)
         .commands {
@@ -43,12 +45,28 @@ struct AmaelMacropedApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        AppFonts.register()
+        // Debug aid for screenshots: AMAEL_APPEARANCE=light|dark.
+        switch ProcessInfo.processInfo.environment["AMAEL_APPEARANCE"] {
+        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        default: break
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Needed when launched as a bare executable (swift run) instead of the .app bundle.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        if let path = ProcessInfo.processInfo.environment["AMAEL_SNAPSHOT"] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { Self.snapshot(to: path) }
+        let env = ProcessInfo.processInfo.environment
+        if env["AMAEL_SNAPSHOT_SETTINGS"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            }
+        }
+        if let path = env["AMAEL_SNAPSHOT"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { Self.snapshot(to: path) }
         }
     }
 
@@ -56,7 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Debug aid: renders the main window to a PNG without needing screen-recording permission.
     private static func snapshot(to path: String) {
-        guard let view = NSApp.windows.first(where: \.isVisible)?.contentView,
+        guard let view = (NSApp.keyWindow ?? NSApp.windows.first(where: \.isVisible))?.contentView,
               let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: rep)
         try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
