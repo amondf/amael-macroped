@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Testes
+        run: swift test
+      - name: App (arm64)
+        run: scripts/build-app.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AmaelMacroped-arm64
+          path: dist/*.zip

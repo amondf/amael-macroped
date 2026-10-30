@@ -1,0 +1,9 @@
+.DS_Store
+.build/
+.swiftpm/
+dist/
+*.xcodeproj/
+xcuserdata/
+
+# Vendor x86 tool used only as reverse-engineering reference — proprietary, never commit it.
+BASE_DRIVER_x86_MINI_KEYBOARD.app/
