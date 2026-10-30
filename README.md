@@ -2,7 +2,7 @@
 
 # Amael Macroped
 
-**Configurador nativo para Apple Silicon (arm64) dos mini teclados/macropads USB baseados em CH57x** — os
+**Configurador nativo para Apple Silicon (arm64) dos mini teclados/macropads USB baseados em CH55x/CH57x (WCH)** — os
 modelos genéricos de 1 a 15 teclas com knob(s) rotativos vendidos como *"Mini Keyboard"*, *"Macro Pad"*,
 *"Macroped"* etc., que acompanham o utilitário `MINI_KEYBOARD.app` (Intel/x86, exige Rosetta).
 
@@ -60,7 +60,9 @@ xattr -dr com.apple.quarantine "/Applications/Amael Macroped.app"
 
 ### Compilando o código-fonte
 
-Requisitos: macOS 13+ e Xcode (ou Command Line Tools) com Swift 5.10+.
+Requisitos: macOS 13+ e Xcode com Swift 5.10+. O ícone dinâmico (estilos do macOS) é compilado do
+`Resources/AmaelMacroped.icon` pelo `actool` e precisa de um Xcode com Icon Composer; em versões mais antigas o
+script gera automaticamente um ícone estático equivalente.
 
 ```bash
 git clone https://github.com/amondf/amael-macroped.git
@@ -79,8 +81,13 @@ scripts/build-app.sh --universal # arm64 + x86_64
 4. Clique em **Gravar no teclado** (⌘↩). A configuração fica salva na memória do próprio dispositivo
    e funciona em qualquer computador, sem o app aberto.
 
-> **Camadas:** a troca de camada é feita pelo firmware do dispositivo (normalmente por uma combinação/botão
-> específico do modelo). Se o seu modelo não troca camadas, use apenas a Camada 1.
+> **Camadas:** o teclado guarda 3 camadas completas na própria memória (confirmado no `514C:8851`), mas quem
+> alterna entre elas é o firmware, e o gesto varia por modelo (botão inferior, combinação de teclas — ou nenhum).
+> O modelo testado não tem botão de camada e o gesto ainda não foi descoberto; se o seu não troca, use a Camada 1.
+> Para guardar vários "conjuntos" no computador, use **Perfis** (*Arquivo › Salvar perfil como…*).
+
+> **Atalho × macro:** no editor, **cada linha é um toque**. Para ⌃⌘C, deixe ⌃ e ⌘ ligados **na mesma linha** da tecla C;
+> três linhas separadas (⌃, depois ⌘, depois C) formam uma sequência e só digitam "c".
 
 ### CLI
 
@@ -91,8 +98,10 @@ macroped list                 # interfaces HID encontradas
 macroped identify             # nº de teclas/knobs informado pelo firmware
 macroped example > meu.json   # perfil de exemplo (edite à vontade)
 macroped write meu.json       # grava o perfil
-macroped read                 # lê a configuração (se o firmware suportar)
+macroped write-default        # grava o perfil padrão (⌘C ⌘V ⌘Z + volume no knob)
+macroped read                 # lê a configuração (teclas; o firmware não devolve o LED)
 macroped monitor 10           # mostra relatórios HID recebidos (diagnóstico)
+macroped raw 03 fb fb fb      # envia um relatório cru (depuração do protocolo)
 ```
 
 Exemplo de perfil (`macroped example`):
@@ -133,6 +142,8 @@ Exemplo de perfil (`macroped example`):
 | "O macOS negou acesso ao dispositivo" | Libere o app em *Ajustes › Privacidade e Segurança › Monitoramento de Entrada*. |
 | Gravou, mas a tecla não faz nada | Confira se está na camada ativa do dispositivo; reconecte o teclado após gravar. |
 | Atalho com ⌘ sai como Ctrl | No macOS o modificador "Win/GUI" do HID é o ⌘ — use o botão ⌘. |
+| Atalho digita só a letra | Os modificadores estão em linhas separadas (virou macro). Junte-os na linha da tecla. |
+| "Ler do teclado" não trouxe a cor do LED | Limitação do firmware: a leitura devolve só as teclas; o app mantém o LED do perfil atual. |
 
 ## Como funciona
 
@@ -143,17 +154,33 @@ um registro de 50 bytes por tecla/direção do knob e um comando de confirmaçã
 Estrutura do código:
 
 ```
-Sources/MacropedKit/    protocolo, modelo de perfil, tabela de teclas e acesso HID (IOKit)
-Sources/AmaelMacroped/  app SwiftUI (traduções em Localization/Strings+<Idioma>.swift)
-Sources/MacropedCLI/    CLI "macroped"
-Tests/MacropedKitTests/ testes do codificador/decodificador
+Sources/MacropedKit/          protocolo, modelo de perfil, tabela de teclas e acesso HID (IOKit)
+Sources/AmaelMacroped/        app SwiftUI
+  Theme/                      tokens de cor, tipografia, botões e componentes (design system)
+  Localization/               traduções (Strings+<Idioma>.swift)
+Sources/MacropedCLI/          CLI "macroped"
+Tests/MacropedKitTests/       testes do codificador/decodificador (inclui bytes do hardware real)
+Resources/AmaelMacroped.icon  ícone do Icon Composer (SVG + icon.json)
+Resources/Fonts/              fonte Onest (OFL)
+scripts/                      build do .app e ícone estático de reserva
+docs/                         protocolo, handoff, imagens
 ```
+
+Histórico de versões em [CHANGELOG.md](CHANGELOG.md); estado do projeto e próximos passos em
+[docs/HANDOFF.md](docs/HANDOFF.md).
 
 **Novo idioma?** Copie `Sources/AmaelMacroped/Localization/Strings+English.swift`, traduza e adicione o caso em
 `AppLanguage` — se faltar algum texto, o compilador avisa.
 
 Agradecimentos ao projeto [ch57x-keyboard-tool](https://github.com/kriomant/ch57x-keyboard-tool), que também
 documentou esta família de dispositivos.
+
+## Roadmap
+
+- **Ações no Mac:** aba para disparar Atalhos da Apple / prompts de IA a partir de teclas do macropad (F13–F24)
+- Seletor manual de layout para firmwares que não respondem à identificação
+- Modelo de *issue* para relatos de outros modelos (saída de `macroped list` / `identify`)
+- Suporte a modelos de 16 e 21 teclas (numeração de slots acima de 15 ainda desconhecida)
 
 ## ☕ Apoie o projeto
 
