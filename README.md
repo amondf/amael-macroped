@@ -11,7 +11,7 @@ original por um app 100% nativo, sem dependências externas (SwiftUI + IOKit HID
 
 > 🇺🇸 **English summary** — Native Apple Silicon configurator for CH57x-based USB macro pads
 > (VID `0x1189`, PIDs `0x8840/0x8842/0x883x/0x885x`). Replaces the vendor's Intel-only `MINI_KEYBOARD.app`.
-> Program key shortcuts, macros, media keys, mouse actions and LED effects on 3 layers. GUI + CLI, MIT licensed.
+> Program key shortcuts, macros, media keys, mouse actions and LED effects on 3 layers. GUI (pt-BR, English, Русский, 简体中文) + CLI, MIT licensed.
 > The wire protocol is documented in [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
 ## Recursos
@@ -147,6 +147,12 @@ Tests/MacropedKitTests/ testes do codificador/decodificador
 
 Agradecimentos ao projeto [ch57x-keyboard-tool](https://github.com/kriomant/ch57x-keyboard-tool), que também
 documentou esta família de dispositivos.
+
+## ☕ Apoie o projeto
+
+Se o Amael Macroped te ajudou, considere pagar um café — o botão **Buy me a coffee** no app leva ao mesmo link:
+
+**[☕ Buy me a coffee (Wise)](https://wise.com/pay/me/amona9)**
 
 ## Licença
 
