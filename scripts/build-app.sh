@@ -31,15 +31,25 @@ cp "$BIN_DIR/macroped" "$APP/Contents/MacOS/macroped"
 cp Resources/Fonts/OnestText.ttf Resources/Fonts/Onest-OFL.txt "$APP/Contents/Resources/"
 
 echo "==> Gerando ícone"
+# Icon Composer (.icon): Padrão / Tom escuro / Translúcido / Tonalizado, compilado pelo actool.
+# Xcode antigo sem suporte a .icon: cai no ícone estático gerado por scripts/make-icon.swift.
 TMP="$(mktemp -d)"
-swift scripts/make-icon.swift "$TMP/icon.png" "${ICON_VARIANT:-amber}"
-ICONSET="$TMP/AppIcon.iconset"
-mkdir -p "$ICONSET"
-for s in 16 32 128 256 512; do
-    sips -z $s $s "$TMP/icon.png" --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
-    sips -z $((s * 2)) $((s * 2)) "$TMP/icon.png" --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
-done
-iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
+if xcrun actool Resources/AmaelMacroped.icon --compile "$APP/Contents/Resources" --platform macosx \
+        --minimum-deployment-target 13.0 --app-icon AmaelMacroped --include-all-app-icons \
+        --output-partial-info-plist "$TMP/partial.plist" >/dev/null 2>&1 \
+        && [[ -f "$APP/Contents/Resources/Assets.car" ]]; then
+    echo "    ícone dinâmico (Assets.car)"
+else
+    echo "    actool sem suporte a .icon — usando ícone estático"
+    swift scripts/make-icon.swift "$TMP/icon.png" "${ICON_VARIANT:-blue}"
+    ICONSET="$TMP/AmaelMacroped.iconset"
+    mkdir -p "$ICONSET"
+    for s in 16 32 128 256 512; do
+        sips -z $s $s "$TMP/icon.png" --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
+        sips -z $((s * 2)) $((s * 2)) "$TMP/icon.png" --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
+    done
+    iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AmaelMacroped.icns"
+fi
 rm -rf "$TMP"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
@@ -51,7 +61,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleDisplayName</key><string>$APP_NAME</string>
     <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
     <key>CFBundleExecutable</key><string>AmaelMacroped</string>
-    <key>CFBundleIconFile</key><string>AppIcon</string>
+    <key>CFBundleIconFile</key><string>AmaelMacroped</string>
+    <key>CFBundleIconName</key><string>AmaelMacroped</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
     <key>CFBundleVersion</key><string>$VERSION</string>

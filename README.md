@@ -28,6 +28,7 @@ original por um app 100% nativo, sem dependências externas (SwiftUI + IOKit HID
 - 🗂️ **3 camadas** independentes, cada uma com seu efeito/cor de **LED**
 - 💾 Perfis em JSON (abrir/salvar) e restauração do último perfil automaticamente
 - 🧹 Botão **Limpar tudo** (com confirmação) que zera as ações das 3 camadas no teclado
+- 🖼️ Ícone do Icon Composer com os estilos do macOS: Padrão, Tom escuro, Translúcido e Tonalizado
 - 🎨 Visual no design system do [Purge](https://github.com/jithin-sabu/purge-app) (fonte Onest, neutros grafite), com aparência Automático/Claro/Escuro
 - 🌐 Interface em **Português (Brasil), English, Русский e 简体中文** — troca instantânea em *Ajustes* (⌘,)
 - 🧰 **CLI** `macroped` para automação e diagnóstico

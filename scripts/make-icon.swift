@@ -1,20 +1,25 @@
 // Renders the app icon (1024×1024 PNG) in the Purge design-system icon style: a continuous
 // squircle with a vivid vertical gradient and a frosted-white glyph (here, the macropad itself).
-// Usage: swift scripts/make-icon.swift <out.png> [amber|graphite]
+// Fallback for Xcode versions without Icon Composer support; the real icon is Resources/AmaelMacroped.icon.
+// Usage: swift scripts/make-icon.swift <out.png> [blue|amber|graphite]
 import AppKit
 
 let args = Array(CommandLine.arguments.dropFirst())
 let out = args.first ?? "AppIcon.png"
-let variant = args.count > 1 ? args[1] : "amber"
+let variant = args.count > 1 ? args[1] : "blue"
 
 func hex(_ v: UInt32, _ a: CGFloat = 1) -> NSColor {
     NSColor(srgbRed: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255,
             blue: CGFloat(v & 0xFF) / 255, alpha: a)
 }
 
-let palette: (top: NSColor, bottom: NSColor, glyphBottom: NSColor, shadow: NSColor) = variant == "graphite"
-    ? (hex(0x4A4845), hex(0x1E1D1C), hex(0xDAD7D2), hex(0x000000, 0.45))
-    : (hex(0xFFB340), hex(0xF27405), hex(0xFFE7CC), hex(0x8A3A00, 0.35))
+let palette: (top: NSColor, bottom: NSColor, glyphBottom: NSColor, shadow: NSColor) = {
+    switch variant {
+    case "graphite": return (hex(0x4A4845), hex(0x1E1D1C), hex(0xDAD7D2), hex(0x000000, 0.45))
+    case "amber": return (hex(0xFFB340), hex(0xF27405), hex(0xFFE7CC), hex(0x8A3A00, 0.35))
+    default: return (hex(0x4DA8FF), hex(0x0088FF), hex(0xCFE6FF), hex(0x00407A, 0.35))
+    }
+}()
 
 let size: CGFloat = 1024
 let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size), pixelsHigh: Int(size), bitsPerSample: 8,
